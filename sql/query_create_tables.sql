@@ -1,5 +1,5 @@
 -- Queries ejecutadas y comprobadas
-
+-- capa bronce
 CREATE TABLE bronze.employee_attrition (
     Age INTEGER,
     Attrition VARCHAR(10),
@@ -37,3 +37,5 @@ CREATE TABLE bronze.employee_attrition (
     YearsSinceLastPromotion INTEGER,
     YearsWithCurrManager INTEGER
 )
+
+-- Capa Gold
