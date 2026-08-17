@@ -9,13 +9,28 @@ El ecosistema local está construido con las siguientes herramientas para asegur
 *   **Python (`psycopg2`, `python-dotenv`):** Actúa como el orquestador ágil para la etapa de Extracción y Carga masiva (EL).
 *   **Arquitectura Medallón:** Separación lógica de los datos a través de esquemas físicos en la base de datos.
 
-## Estado Actual del Proyecto: Ingesta Capa Bronce
+## Fases del Pipeline de Datos (ELT)
 
-Hasta el momento, se ha completado la fase **EL (Extract & Load)** hacia la capa Bronce. El script `main.py` automatiza la configuración inicial de la infraestructura y el volcado de datos:
+El pipeline se ha completado exitosamente a través de sus tres capas lógicas:
 
-1.  **Generación Dinámica de Esquemas:** El código de Python se encarga de crear el esquema `bronze` y definir explícitamente el código DDL de la tabla `employee_attrition` en PostgreSQL, garantizando el control sobre los tipos de datos desde el primer paso.
-2.  **Patrón Truncate & Load:** Se implementó una limpieza de la tabla previa a la carga (`TRUNCATE TABLE`) para hacer el pipeline idempotente, asegurando que la tabla reciba la foto más reciente de los datos sin generar registros duplicados en ejecuciones sucesivas.
-3.  **Carga Masiva Optimizada:** Se descartaron inserciones fila por fila (Pandas) a favor del comando nativo `COPY` de PostgreSQL a través del driver `psycopg2`. Esto inyecta el archivo CSV crudo directamente en el motor de la base de datos a máxima velocidad.
+### 1. Capa Bronce (Ingesta Cruda)
+Se completó la fase **EL (Extract & Load)** utilizando Python para automatizar la configuración inicial de la infraestructura y el volcado masivo de datos:
+*   **Generación Dinámica de Esquemas:** Creación automatizada del esquema `bronze` y definición explícita del código DDL.
+*   **Patrón Truncate & Load:** Implementación de limpieza de tabla previa a la carga para garantizar un pipeline idempotente (sin duplicados en recargas).
+*   **Carga Masiva Optimizada:** Uso del comando nativo `COPY` de PostgreSQL a través del driver `psycopg2`, inyectando el CSV en crudo a máxima velocidad, reemplazando las inserciones fila por fila.
+
+### 2. Capa Plata (Limpieza y Estandarización)
+Se delegó el procesamiento a PostgreSQL para realizar transformaciones puramente con SQL:
+*   **Refactorización y Convenciones:** Estandarización de todas las columnas al formato `snake_case`.
+*   **Limpieza de Texto:** Uso de funciones anidadas (`REPLACE`) para limpiar caracteres no deseados (ej. guiones en la columna `business_travel`).
+*   **Reducción de Ruido:** Eliminación de columnas sin varianza o valor analítico (ej. `EmployeeCount`, `StandardHours`, `Over18`).
+*   **Integridad:** Definición de la llave primaria (`id_employee`) para asegurar la unicidad de los registros.
+
+### 3. Capa Oro (Modelado Dimensional)
+Se construyó un **Esquema de Estrella (Star Schema)** optimizado para herramientas de Business Intelligence:
+*   **Tablas de Dimensión:** Creación de catálogos estáticos (ej. `dim_education`, `dim_environment_satisfaction`, `dim_job_involvement`) asignando identificadores únicos.
+*   **Tabla de Hechos:** Creación de la tabla central `employee_attrition` que consolida las métricas numéricas e integra los identificadores de las dimensiones.
+*   **Integridad Referencial:** Implementación de restricciones de llaves foráneas (`FOREIGN KEY`) para conectar la tabla de hechos con sus dimensiones de forma robusta.
 
 ## Estructura del Proyecto
 
@@ -24,6 +39,7 @@ HR Analytics Employee/
 ├── Data/
 │   └── 01-bronze/
 │       └── WA_Fn-UseC_-HR-Employee-Attrition.csv
+├── sql/
 ├── .env
 ├── .gitignore
 ├── main.py
